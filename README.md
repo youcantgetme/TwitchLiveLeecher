@@ -1,5 +1,7 @@
 # Twitch Live Leecher
 
+Capture Twitch live feed into files.
+
 A simple PHP script to emulate browser watching live stream , download HLS via ffmpeg.
 
 # installation
