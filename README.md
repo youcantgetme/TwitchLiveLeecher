@@ -4,8 +4,6 @@ A simple PHP script to emulate browser watching live stream , download HLS via f
 
 # installation
 
-- Download ffmpeg build from [zeranoe](https://ffmpeg.zeranoe.com/builds/)
-- Extract `ffmpeg.exe` to the folder , together with `run.bat`
 - Modify `run.bat` , add or edit channel
 - Execute `run.bat`
 - The result will locate in VOD folder
