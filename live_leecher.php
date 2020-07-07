@@ -1,7 +1,8 @@
 <?php
 set_time_limit(0);
+define('AUDIO_ONLY',0);// set 1 to record audio only , useful to prevent DMCA mute on VOD.
 define('VOD_FOLDER','VOD');
-define('IDLE_TIME',180); //seconds
+define('IDLE_TIME',180); //interval between check ,unit second
 define('LOG_FILE','log.txt');
 if(empty($argv[1]))exit('No CHANNEL assigned');
 $channel=$argv[1];
@@ -9,15 +10,47 @@ $first_run=true;
 $session_ts=0;
 $current_ts=time()+28800;
 $lastest_vod_ts=0;
+$ffmpeg_arg='';
+$filename_append='';
+$record_mode='';
+$audio=true;
+$video=true;
+if(AUDIO_ONLY)$video=false;
+
+//parse input args , leaves default setting if no args 
+if(isset($argv[2]) && !empty($argv[2]))
+{
+	stristr($argv[2],'a')===false?$audio=false:$audio=true;
+	stristr($argv[2],'v')===false?$video=false:$video=true;
+}
+if($audio && $video) 
+{
+	//default , record both audio and video
+	$ffmpeg_arg='-c copy';
+}
+elseif($audio)
+{
+	//audio only
+	$ffmpeg_arg='-vn -c:a copy';
+	$filename_append='_audio_only';
+	$record_mode=' *Audio only*';	
+}
+elseif($video)
+{
+	//video only
+	$ffmpeg_arg='-an -c:v copy';
+	$filename_append='_video_only';
+	$record_mode=' *Video only*';	
+}
 exec('title Twitch Live leecher: '.$channel.' [idle]');
 while(1)
 {
 	if(!$first_run)sleep(IDLE_TIME);
 	$first_run=false;
 	if($lastest_vod_ts==0)
-		exec('title Twitch Live leecher: '.$channel.' [idle]');
+		exec('title Twitch Live leecher: '.$channel.$record_mode.' [idle]');
 	else
-		exec('title Twitch Live leecher: '.$channel.' [idle] , lastest VOD recorded at '.date('Ymd H:i:s',$lastest_vod_ts));
+		exec('title Twitch Live leecher: '.$channel.$record_mode.' [idle] , lastest VOD recorded at '.date('Ymd H:i:s',$lastest_vod_ts));
 	echo date('Ymd H:i:s',$current_ts).' [INFO] Listening '.$channel.PHP_EOL;
 	
 	//checking channel status
@@ -57,17 +90,17 @@ while(1)
 	if(!is_dir(VOD_FOLDER))mkdir(VOD_FOLDER);
 	
 	//downloading VOD via ffmpeg
-	exec('title Twitch Live leecher: '.$channel.' [Recording] , Press "Q" to stop recording');
+	exec('title Twitch Live leecher: '.$channel.$record_mode.' [Recording] , Press "Q" to stop recording');
 	$current_ts=time()+28800;
-	$msg=date('Ymd H:i:s',$current_ts).' [INFO] Record session '.$session_ts.' of '.$channel.' begins'.PHP_EOL;
+	$msg=date('Ymd H:i:s',$current_ts).' [INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' begins'.PHP_EOL;
 	echo $msg;
 	file_put_contents(LOG_FILE,$msg,FILE_APPEND);
-	exec ('ffmpeg -i '.$m3u8_url.' -c copy '.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).'.mp4');
+	exec ('ffmpeg -i '.$m3u8_url.' '.$ffmpeg_arg.' '.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).$filename_append.'.mp4');
 	echo '====================================='.PHP_EOL;
 	$lastest_vod_ts=$current_ts=time()+28800;
-	$msg=date('Ymd H:i:s',$current_ts).' [INFO] Record session '.$session_ts.' of '.$channel.' ends'.PHP_EOL;
+	$msg=date('Ymd H:i:s',$current_ts).' [INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' ends'.PHP_EOL;
 	echo $msg;
 	file_put_contents(LOG_FILE,$msg,FILE_APPEND);
-	exec('title Twitch Live leecher: '.$channel.' [idle] , lastest VOD recorded at '.date('Ymd H:i:s',$lastest_vod_ts));
+	exec('title Twitch Live leecher: '.$channel.$record_mode.' [idle] , lastest VOD recorded at '.date('Ymd H:i:s',$lastest_vod_ts));
 }
 ?>
