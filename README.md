@@ -21,13 +21,19 @@ Set AUDIO_ONLY to 1 to record audio only, useful when just preventing from DMCA 
 If no arguments on tail, setting from script will be use.
 
 - The default no tail, leaves AUDIO_ONLY to decide.
+
 @start php\php.exe live_leecher.php test
 
+
 - Audio option , add `a` or `A` on tail to record audio only.
+
 @start php\php.exe live_leecher.php test `a`
 
+
 - Video option , add `v` or `V` on tail to record video only.
+
 @start php\php.exe live_leecher.php test `v`
+
 
 - A/V option , add `AV` or `av` on tail to record both.
 @start php\php.exe live_leecher.php test `av`
