@@ -1,5 +1,6 @@
 <?php
 set_time_limit(0);
+define('OAUTH_TOKEN','undefined'); //replace 'undefined' with your oauth_token if you are subscriber to avoid AD
 define('AUDIO_ONLY',0);// set 1 to record audio only , useful to prevent DMCA mute on VOD.
 define('VOD_FOLDER','VOD');
 define('IDLE_TIME',180); //interval between check ,unit second
@@ -55,7 +56,7 @@ while(1)
 	
 	//checking channel status
 	$current_ts=$session_ts=time()+28800;
-	$token_request=@file_get_contents('https://api.twitch.tv/api/channels/'.$channel.'/access_token?oauth_token=undefined&need_https=true&platform=web&player_type=site&player_backend=mediaplayer&client_id=kimne78kx3ncx6brgo4mv6wki5h1ko');
+	$token_request=@file_get_contents('https://api.twitch.tv/api/channels/'.$channel.'/access_token?oauth_token='.OAUTH_TOKEN.'&need_https=true&platform=web&player_type=site&player_backend=mediaplayer&client_id=kimne78kx3ncx6brgo4mv6wki5h1ko');
 	if($token_request===false)
 	{
 		$msg=date('Ymd H:i:s',$current_ts).' [EROR] Not able to get API of '.$channel.' , maybe incorrect channel spell or got banned?'.PHP_EOL;
