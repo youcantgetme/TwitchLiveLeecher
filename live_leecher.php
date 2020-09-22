@@ -7,6 +7,7 @@ define('FFMPEG_OPTIONS','-movflags faststart'); //faststart works on MP4 only.
 define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
 define('AUDIO_ONLY',0); //set 1 to record audio only , useful to prevent DMCA muting VODs.
+define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
 
 if(empty($argv[1]))exit('No CHANNEL assigned');
@@ -44,11 +45,15 @@ if(strpos(FFMPEG_OPTIONS,'-c')===false && strpos(FFMPEG_OPTIONS,'codec')===false
 	{
 		//default , record both audio and video
 		$ffmpeg_arg='-c copy';
+		if(FORCE_44100_AUDIO)
+			$ffmpeg_arg='-c:v copy -c:a aac -b:a 160k -ar 44100';
 	}
 	elseif($audio)
 	{
 		//audio only
 		$ffmpeg_arg='-vn -c:a copy';
+		if(FORCE_44100_AUDIO)
+			$ffmpeg_arg='-vn -c:a aac -b:a 160k -ar 44100';
 		$filename_append='_audio_only';
 		$record_mode=' *Audio only*';	
 	}
