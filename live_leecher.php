@@ -6,7 +6,6 @@ define('VIDEO_CONTAINER','mp4'); //(mkv)Matroska file could still read after acc
 define('FFMPEG_OPTIONS','-movflags faststart'); //faststart works on MP4 only.
 define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
-define('AUDIO_ONLY',0); //set 1 to record audio only , useful to prevent DMCA muting VODs.
 define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
 
@@ -28,7 +27,6 @@ if(!is_dir(VOD_FOLDER))mkdir(VOD_FOLDER);
 //AV args will be ignored if codec assigned in FFMPEG_OPTIONS
 if(strpos(FFMPEG_OPTIONS,'-c')===false && strpos(FFMPEG_OPTIONS,'codec')===false)
 {
-	if(AUDIO_ONLY)$video=false;
 	//parse input args , leaves default setting if no args 
 	if(isset($argv[2]) && !empty($argv[2]))
 	{

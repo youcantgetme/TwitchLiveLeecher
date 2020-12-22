@@ -1,4 +1,4 @@
-rem The default no tail, leaves AUDIO_ONLY to decide.
+rem The default no tail, recording both video and audio.
 @start php\php.exe live_leecher.php test1
 
 rem Audio option , add `a` or `A` on tail to record audio only.
