@@ -4,7 +4,7 @@ A simple PHP script to emulate browser watching live stream, download HLS via ff
 
 # installation
 
-- Modify `run.bat`, add or edit channel
+- Modify `run.bat`, add channel
 - Execute `run.bat`
 - The result will locate in VOD folder
 
@@ -39,3 +39,8 @@ If no arguments on tail, setting from script will be use.
 `@start php\php.exe live_leecher.php test av`
 
 - A/V option , add `AV` or `av` on tail to record both.
+
+# How to find auth-token 
+Live Leecher can bypass Ads With subscriber's account token, to get your own token , press F12 on browser to open Dev tool and locate token with picture below.
+Then modify the `undefined` following OAUTH_TOKEN with your token.
+![image](https://github.com/youcantgetme/TwitchLiveLeecher/auth-token.png)
