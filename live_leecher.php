@@ -8,7 +8,7 @@ define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
 define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
-define('VER','1.02');
+define('VER','1.04');
 
 if(empty($argv[1]))exit('No CHANNEL assigned');
 $channel=$argv[1];
@@ -74,46 +74,49 @@ while(1)
 		exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [idle] '.$token_status);
 	else
 		exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [idle] , lastest VOD recorded at '.date('Ymd H:i:s',$lastest_vod_ts).'. '.$token_status);
-	
-	$current_ts=$session_ts=time()+$timezone_offset;
-	echo date('Ymd H:i:s',$current_ts).' [INFO] Listening '.$channel.PHP_EOL;
-	
+		
 	//checking channel status
 	$oauth_token=OAUTH_TOKEN;
-	if(OAUTH_TOKEN!='undefined')$oauth_token='OAuth '.OAUTH_TOKEN;
-	$opts = array('http'=>
-		array(
-			'method' =>'POST',
-			'header' =>['Content-Type: text/plain;charset=UTF-8','Client-ID: kimne78kx3ncx6brgo4mv6wki5h1ko','Authorization: '.$oauth_token],
-			'content'=>'{"operationName":"PlaybackAccessToken_Template","query":"query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) {  streamPlaybackAccessToken(channelName: $login, params: {platform: \"web\", playerBackend: \"mediaplayer\", playerType: $playerType}) @include(if: $isLive) {    value    signature    __typename  }  videoPlaybackAccessToken(id: $vodID, params: {platform: \"web\", playerBackend: \"mediaplayer\", playerType: $playerType}) @include(if: $isVod) {    value    signature    __typename  }}","variables":{"isLive":true,"login":"'.$channel.'","isVod":false,"vodID":"","playerType":"site"}}'
-		)
-	);
-	$context  = stream_context_create($opts);
-	$token_request = @file_get_contents('https://gql.twitch.tv/gql', false, $context);
-	
-	if(OAUTH_TOKEN!='undefined')
+	if($oauth_token=='undefined')
+		$token_status=' (not log in) ';
+	elseif(strlen(OAUTH_TOKEN)!=30 || !ctype_alnum(OAUTH_TOKEN))
 	{
-		if(strpos($token_request,'"user_id\":null,')!==false)
+		$token_status=' (*token invalid) ';
+		$oauth_token='undefined';
+	}
+	else
+		$oauth_token='OAuth '.OAUTH_TOKEN;
+		
+	$token_request=token_check($channel,$oauth_token);
+
+	if($oauth_token!='undefined')
+	{
+		if($token_request===false || strpos($token_request,'"user_id\":null,')!==false)
+		{
+			log_msg('[EROR] Server request failed, please check channel '.$channel.' and OAUTH_TOKEN is valid , retrying with guest');
+			//retrying with guest 
+			$oauth_token='undefined';
 			$token_status=' (*token invalid) ';
+			$token_request=token_check($channel,$oauth_token);
+		}
 		else
 			$token_status=' (token valid) ';
 	}
-	else
-		$token_status=' (not log in) ';
-
+	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [idle] '.$token_status);
 	if($token_request===false)
 	{
-		$msg=date('Ymd H:i:s',$current_ts).' [EROR] Server request failed, please check channel '.$channel.' and OAUTH_TOKEN is valid'.PHP_EOL;
-		echo $msg;
+		log_msg('[EROR] Server request failed, please check channel '.$channel.' and OAUTH_TOKEN is valid');
 		continue;
 	}
+
+	log_msg('[AUTH] Token acquired, begin listening '.$channel);
+	$current_ts=$session_ts=time()+$timezone_offset;
+	echo date('Ymd H:i:s',$current_ts).' [INFO] Listening '.$channel.PHP_EOL;
 	
 	$json=json_decode($token_request,true);
 	if(!isset($json['data']['streamPlaybackAccessToken']['signature']) || empty($json['data']['streamPlaybackAccessToken']['signature']))
 	{
-		$msg=date('Ymd H:i:s',$current_ts).' [EROR] Unable to get correct API response of '.$channel.PHP_EOL;
-		echo $msg;
-		file_put_contents(LOG_FILE,$msg,FILE_APPEND);
+		log_msg('[EROR] Unable to get correct API response of '.$channel);
 		continue;
 	}
 	$token=urlencode($json['data']['streamPlaybackAccessToken']['value']);
@@ -127,9 +130,7 @@ while(1)
 	
 	if(empty($m3u8_url))
 	{
-		$msg=date('Ymd H:i:s',$current_ts).' [EROR] Not able to get correct M3U8 URL of '.$channel.PHP_EOL;
-		echo $msg;
-		file_put_contents(LOG_FILE,$msg,FILE_APPEND);
+		log_msg('[EROR] Not able to get correct M3U8 URL of '.$channel);
 		continue;
 	}
 	$m3u8_url.='.m3u8';
@@ -143,9 +144,7 @@ while(1)
 	{
 		$current_ts=time()+$timezone_offset;
 		exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [Playing AD] '.$token_status);
-		$msg=date('Ymd H:i:s',$current_ts).' [INFO] Bypassing AD';
-		echo $msg;
-		
+		log_msg('[INFO] Bypassing AD');
 		while(true)
 		{
 			echo '.';
@@ -158,15 +157,30 @@ while(1)
 	//downloading VOD via ffmpeg
 	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [Recording] , Press "Q" to stop recording. '.$token_status);
 	$current_ts=time()+$timezone_offset;
-	$msg=date('Ymd H:i:s',$current_ts).' [INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' begins'.PHP_EOL;
-	echo $msg;
-	file_put_contents(LOG_FILE,$msg,FILE_APPEND);
+	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' begins');
 	exec ('ffmpeg -i '.$m3u8_url.' '.FFMPEG_OPTIONS.' '.$ffmpeg_arg.' '.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).$filename_append.'.'.VIDEO_CONTAINER);
 	echo '====================================='.PHP_EOL;
 	$lastest_vod_ts=$current_ts=time()+$timezone_offset;
-	$msg=date('Ymd H:i:s',$current_ts).' [INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' ends with '.date('H:i:s',$current_ts-$session_ts).PHP_EOL;
+	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' ends with '.date('H:i:s',$current_ts-$session_ts));
+	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [idle] , lastest VOD recorded at '.date('Ymd H:i:s',$lastest_vod_ts).'. '.$token_status);
+}
+function log_msg($msg=NULL)
+{
+	if(empty($msg))return false;
+	$msg=date('Ymd H:i:s',time()+TIMEZONE*3600).' '.$msg.PHP_EOL;
 	echo $msg;
 	file_put_contents(LOG_FILE,$msg,FILE_APPEND);
-	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [idle] , lastest VOD recorded at '.date('Ymd H:i:s',$lastest_vod_ts).'. '.$token_status);
+}
+function token_check($channel,$oauth_token)
+{
+	$opts = array('http'=>
+		array(
+			'method' =>'POST',
+			'header' =>['Content-Type: text/plain;charset=UTF-8','Client-ID: kimne78kx3ncx6brgo4mv6wki5h1ko','Authorization: '.$oauth_token],
+			'content'=>'{"operationName":"PlaybackAccessToken_Template","query":"query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) {  streamPlaybackAccessToken(channelName: $login, params: {platform: \"web\", playerBackend: \"mediaplayer\", playerType: $playerType}) @include(if: $isLive) {    value    signature    __typename  }  videoPlaybackAccessToken(id: $vodID, params: {platform: \"web\", playerBackend: \"mediaplayer\", playerType: $playerType}) @include(if: $isVod) {    value    signature    __typename  }}","variables":{"isLive":true,"login":"'.$channel.'","isVod":false,"vodID":"","playerType":"site"}}'
+		)
+	);
+	$context  = stream_context_create($opts);
+	return @file_get_contents('https://gql.twitch.tv/gql', false, $context);
 }
 ?>
