@@ -18,25 +18,25 @@ The default listening interval is 180 seconds, change this via IDLE_TIME.
 If no arguments on tail, setting from script will be use.
 
 
-`@start php\php.exe live_leecher.php test`
+`@start php\php.exe live_leecher.php test_twitch_channel`
 
 - The default no tail, recording both video and audio.
 
 
 
-`@start php\php.exe live_leecher.php test a`
+`@start php\php.exe live_leecher.php test_twitch_channel a`
 
 - Audio option , add `a` or `A` on tail to record audio only, useful when preventing from DMCA auto mute purpose.
 
 
 
-`@start php\php.exe live_leecher.php test v`
+`@start php\php.exe live_leecher.php test_twitch_channel v`
 
 - Video option , add `v` or `V` on tail to record video only.
 
 
 
-`@start php\php.exe live_leecher.php test av`
+`@start php\php.exe live_leecher.php test_twitch_channel av`
 
 - A/V option , add `AV` or `av` on tail to record both.
 

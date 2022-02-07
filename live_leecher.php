@@ -8,13 +8,15 @@ define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
 define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
-define('VER','1.04');
+define('VER','1.06');
 
 if(empty($argv[1]))exit('No CHANNEL assigned');
 $channel=$argv[1];
 $first_run=true;
 $session_ts=0;
 $lastest_vod_ts=0;
+$token_timeout_ts=0;
+$token_request=false;
 $ffmpeg_arg='';
 $filename_append='';
 $record_mode='';
@@ -86,30 +88,33 @@ while(1)
 	}
 	else
 		$oauth_token='OAuth '.OAUTH_TOKEN;
-		
-	$token_request=token_check($channel,$oauth_token);
-
-	if($oauth_token!='undefined')
+	
+	if(time()-21600 > $token_timeout_ts)
 	{
-		if($token_request===false || strpos($token_request,'"user_id\":null,')!==false)
+		$token_timeout_ts=time();
+		$token_request=token_check($channel,$oauth_token);
+		if($oauth_token!='undefined')
 		{
-			log_msg('[EROR] Server request failed, please check channel '.$channel.' and OAUTH_TOKEN is valid , retrying with guest');
-			//retrying with guest 
-			$oauth_token='undefined';
-			$token_status=' (*token invalid) ';
-			$token_request=token_check($channel,$oauth_token);
+			if($token_request===false || strpos($token_request,'"user_id\":null,')!==false)
+			{
+				log_msg('[EROR] Server request failed, please check channel '.$channel.' and OAUTH_TOKEN is valid , retrying with guest');
+				//retrying with guest 
+				$oauth_token='undefined';
+				$token_status=' (*token invalid) ';
+				$token_request=token_check($channel,$oauth_token);
+			}
+			else
+				$token_status=' (token valid) ';
 		}
-		else
-			$token_status=' (token valid) ';
+		exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [idle] '.$token_status);
 	}
-	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [idle] '.$token_status);
 	if($token_request===false)
 	{
 		log_msg('[EROR] Server request failed, please check channel '.$channel.' and OAUTH_TOKEN is valid');
 		continue;
 	}
 
-	log_msg('[AUTH] Token acquired, begin listening '.$channel);
+	if($first_run)log_msg('[AUTH] Token acquired, begin listening '.$channel);
 	$current_ts=$session_ts=time()+$timezone_offset;
 	echo date('Ymd H:i:s',$current_ts).' [INFO] Listening '.$channel.PHP_EOL;
 	
@@ -134,13 +139,8 @@ while(1)
 		continue;
 	}
 	$m3u8_url.='.m3u8';
-		
-	if(strpos(file_get_contents($m3u8_url),',Amazon|')!==false)
-		$ad_exist=true;
-	else
-		$ad_exist=false;
-
-	if($ad_exist)
+	
+	if(strpos(file_get_contents($m3u8_url),',Amazon|')!==false) //M3U8 contains AD
 	{
 		$current_ts=time()+$timezone_offset;
 		exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [Playing AD] '.$token_status);
