@@ -8,7 +8,7 @@ define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
 define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
-define('VER','1.06');
+define('VER','1.07');
 
 if(empty($argv[1]))exit('No CHANNEL assigned');
 $channel=$argv[1];
@@ -158,7 +158,7 @@ while(1)
 	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [Recording] , Press "Q" to stop recording. '.$token_status);
 	$current_ts=time()+$timezone_offset;
 	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' begins');
-	exec ('ffmpeg -i '.$m3u8_url.' '.FFMPEG_OPTIONS.' '.$ffmpeg_arg.' '.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).$filename_append.'.'.VIDEO_CONTAINER);
+	exec ('ffmpeg -n -i '.$m3u8_url.' '.FFMPEG_OPTIONS.' '.$ffmpeg_arg.' '.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).$filename_append.'.'.VIDEO_CONTAINER);
 	echo '====================================='.PHP_EOL;
 	$lastest_vod_ts=$current_ts=time()+$timezone_offset;
 	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' ends with '.date('H:i:s',$current_ts-$session_ts));
