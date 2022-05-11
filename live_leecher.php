@@ -8,7 +8,7 @@ define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
 define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
-define('VER','1.07');
+define('VER','1.09');
 
 if(empty($argv[1]))exit('No CHANNEL assigned');
 $channel=$argv[1];
@@ -16,6 +16,7 @@ $first_run=true;
 $session_ts=0;
 $lastest_vod_ts=0;
 $token_timeout_ts=0;
+$disconnect_check=0;
 $token_request=false;
 $ffmpeg_arg='';
 $filename_append='';
@@ -69,7 +70,14 @@ if(strpos(FFMPEG_OPTIONS,'-c')===false && strpos(FFMPEG_OPTIONS,'codec')===false
 exec('title Twitch Live leecher v'.VER.' : '.$channel.' [idle]');
 while(1)
 {
-	if(!$first_run)sleep(IDLE_TIME);
+	if($disconnect_check>0)
+	{
+		sleep($disconnect_check);
+		$disconnect_check*=3;
+		if($disconnect_check>IDLE_TIME)
+		$disconnect_check=0;
+	}
+	elseif(!$first_run)sleep(IDLE_TIME);
 	$first_run=false;
 
 	if($lastest_vod_ts==0)
@@ -127,7 +135,7 @@ while(1)
 	$token=urlencode($json['data']['streamPlaybackAccessToken']['value']);
 	
 	//getting M3U8 URL
-	$usher=@file_get_contents('https://usher.ttvnw.net/api/channel/hls/'.$channel.'.m3u8?allow_source=true&fast_bread=true&p=1151682&play_session_id=6b9ddd91630dbe31f54e5c41c8b190e5&player_backend=mediaplayer&playlist_include_framerate=true&reassignments_supported=true&sig='.$json['data']['streamPlaybackAccessToken']['signature'].'&supported_codecs=vp09&token='.$token.'&cdm=wv&player_version=1.2.0');
+	$usher=@file_get_contents('https://usher.ttvnw.net/api/channel/hls/'.$channel.'.m3u8?allow_source=true&fast_bread=true&p=11'.mt_rand(10000,99999).'&play_session_id=6b9ddd91630dbe31f54e5c41c8b190e5&player_backend=mediaplayer&playlist_include_framerate=true&reassignments_supported=true&sig='.$json['data']['streamPlaybackAccessToken']['signature'].'&supported_codecs=vp09&token='.$token.'&cdm=wv&player_version=1.2.0');
 	if($usher===false)continue; //consider channel offline
 	$https_pos_begin=strpos($usher,'https');
 	$https_pos_end=strpos($usher,'.m3u8',$https_pos_begin);
@@ -163,6 +171,7 @@ while(1)
 	$lastest_vod_ts=$current_ts=time()+$timezone_offset;
 	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' ends with '.date('H:i:s',$current_ts-$session_ts));
 	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [idle] , lastest VOD recorded at '.date('Ymd H:i:s',$lastest_vod_ts).'. '.$token_status);
+	$disconnect_check=1;
 }
 function log_msg($msg=NULL)
 {
