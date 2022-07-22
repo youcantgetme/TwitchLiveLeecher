@@ -8,7 +8,7 @@ define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
 define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
-define('VER','1.09');
+define('VER','1.10');
 
 if(empty($argv[1]))exit('No CHANNEL assigned');
 $channel=$argv[1];
@@ -26,7 +26,7 @@ $video=true;
 $token_status='';
 $timezone_offset=TIMEZONE*3600;
 
-if(!is_dir(VOD_FOLDER))mkdir(VOD_FOLDER);
+if(!is_dir(dirname(__FILE__).DIRECTORY_SEPARATOR.VOD_FOLDER))mkdir(dirname(__FILE__).DIRECTORY_SEPARATOR.VOD_FOLDER);
 
 //AV args will be ignored if codec assigned in FFMPEG_OPTIONS
 if(strpos(FFMPEG_OPTIONS,'-c')===false && strpos(FFMPEG_OPTIONS,'codec')===false)
@@ -166,7 +166,7 @@ while(1)
 	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [Recording] , Press "Q" to stop recording. '.$token_status);
 	$current_ts=time()+$timezone_offset;
 	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' begins');
-	exec ('ffmpeg -n -i '.$m3u8_url.' '.FFMPEG_OPTIONS.' '.$ffmpeg_arg.' '.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).$filename_append.'.'.VIDEO_CONTAINER);
+	exec ('ffmpeg -n -i '.$m3u8_url.' '.FFMPEG_OPTIONS.' '.$ffmpeg_arg.' '.dirname(__FILE__).DIRECTORY_SEPARATOR.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).$filename_append.'.'.VIDEO_CONTAINER);
 	echo '====================================='.PHP_EOL;
 	$lastest_vod_ts=$current_ts=time()+$timezone_offset;
 	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' ends with '.date('H:i:s',$current_ts-$session_ts));
@@ -178,7 +178,7 @@ function log_msg($msg=NULL)
 	if(empty($msg))return false;
 	$msg=date('Ymd H:i:s',time()+TIMEZONE*3600).' '.$msg.PHP_EOL;
 	echo $msg;
-	file_put_contents(LOG_FILE,$msg,FILE_APPEND);
+	file_put_contents(dirname(__FILE__).DIRECTORY_SEPARATOR.LOG_FILE,$msg,FILE_APPEND);
 }
 function token_check($channel,$oauth_token)
 {

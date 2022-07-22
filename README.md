@@ -41,6 +41,6 @@ If no arguments on tail, setting from script will be use.
 - A/V option , add `AV` or `av` on tail to record both.
 
 # How to find auth-token 
-Live Leecher can bypass Ads With subscriber's account token, to get your own token , press F12 on browser to open Dev tool and locate token with picture below.
+Live Leecher can bypass Ads with subscriber's account token, to get your own token , press F12 on browser to open Dev tool and locate token with picture below.
 Then modify `undefined` following OAUTH_TOKEN with your token at the third line of live_leecher.php.
 ![image](https://github.com/youcantgetme/TwitchLiveLeecher/blob/master/auth-token.png)
