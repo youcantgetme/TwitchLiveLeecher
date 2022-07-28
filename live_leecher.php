@@ -8,7 +8,7 @@ define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
 define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
-define('VER','1.10');
+define('VER','1.11');
 
 if(empty($argv[1]))exit('No CHANNEL assigned');
 $channel=$argv[1];
@@ -101,6 +101,11 @@ while(1)
 	{
 		$token_timeout_ts=time();
 		$token_request=token_check($channel,$oauth_token);
+		if(strpos($token_request,'UNAUTHORIZED_ENTITLMENTS')!==false)
+		{
+			log_msg('[EROR] Unable to access content, you must use token if '.$channel.' is subscriber only channel.');
+			continue;
+		}
 		if($oauth_token!='undefined')
 		{
 			if($token_request===false || strpos($token_request,'"user_id\":null,')!==false)
