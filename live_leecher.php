@@ -8,7 +8,7 @@ define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
 define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
-define('VER','1.11');
+define('VER','1.12');
 
 if(empty($argv[1]))exit('No CHANNEL assigned');
 $channel=$argv[1];
@@ -140,7 +140,7 @@ while(1)
 	$token=urlencode($json['data']['streamPlaybackAccessToken']['value']);
 	
 	//getting M3U8 URL
-	$usher=@file_get_contents('https://usher.ttvnw.net/api/channel/hls/'.$channel.'.m3u8?allow_source=true&fast_bread=true&p=11'.mt_rand(10000,99999).'&play_session_id=6b9ddd91630dbe31f54e5c41c8b190e5&player_backend=mediaplayer&playlist_include_framerate=true&reassignments_supported=true&sig='.$json['data']['streamPlaybackAccessToken']['signature'].'&supported_codecs=vp09&token='.$token.'&cdm=wv&player_version=1.2.0');
+	$usher=@file_get_contents('https://usher.ttvnw.net/api/channel/hls/'.$channel.'.m3u8?allow_source=true&fast_bread=true&p=11'.mt_rand(10000,99999).'&play_session_id=d4c2c086952b116f0c438b4ed39b40ba&player_backend=mediaplayer&playlist_include_framerate=true&reassignments_supported=true&sig='.$json['data']['streamPlaybackAccessToken']['signature'].'&supported_codecs=vp09&token='.$token.'&cdm=wv&player_version=1.2.0');
 	if($usher===false)continue; //consider channel offline
 	$https_pos_begin=strpos($usher,'https');
 	$https_pos_end=strpos($usher,'.m3u8',$https_pos_begin);
@@ -171,7 +171,7 @@ while(1)
 	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [Recording] , Press "Q" to stop recording. '.$token_status);
 	$current_ts=time()+$timezone_offset;
 	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' begins');
-	exec ('ffmpeg -n -i '.$m3u8_url.' '.FFMPEG_OPTIONS.' '.$ffmpeg_arg.' '.dirname(__FILE__).DIRECTORY_SEPARATOR.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).$filename_append.'.'.VIDEO_CONTAINER);
+	exec(dirname(__FILE__).DIRECTORY_SEPARATOR.'ffmpeg.exe -n -i '.$m3u8_url.' '.FFMPEG_OPTIONS.' '.$ffmpeg_arg.' '.dirname(__FILE__).DIRECTORY_SEPARATOR.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).$filename_append.'.'.VIDEO_CONTAINER);
 	echo '====================================='.PHP_EOL;
 	$lastest_vod_ts=$current_ts=time()+$timezone_offset;
 	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' ends with '.date('H:i:s',$current_ts-$session_ts));
