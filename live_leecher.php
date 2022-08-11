@@ -1,14 +1,17 @@
 <?php
-set_time_limit(0);
 define('OAUTH_TOKEN','undefined'); //replace 'undefined' with your oauth_token if you are subscriber to avoid AD , this token could only obtain via 'auth-token' in the Cookie located in Application tab of browser developer tools.
 define('IDLE_TIME',180); //interval between check ,unit second.
 define('VIDEO_CONTAINER','mp4'); //(mkv)Matroska file could still read after accidentally crash.
-define('FFMPEG_OPTIONS','-movflags faststart'); //faststart works on MP4 only.
+define('FFMPEG_OPTIONS','-movflags faststart -segment_format_options flush_packets=1'); //faststart works on MP4 only.
 define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
 define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
-define('VER','1.12');
+define('LOG_LEVEL',0);
+define('SESSION_ID',str_pad(dechex(mt_rand(0,65535)),4,'0', STR_PAD_LEFT));
+define('VER','1.14');
+
+set_time_limit(0);
 
 if(empty($argv[1]))exit('No CHANNEL assigned');
 $channel=$argv[1];
@@ -24,6 +27,7 @@ $record_mode='';
 $audio=true;
 $video=true;
 $token_status='';
+$force_token_update=false;
 $timezone_offset=TIMEZONE*3600;
 
 if(!is_dir(dirname(__FILE__).DIRECTORY_SEPARATOR.VOD_FOLDER))mkdir(dirname(__FILE__).DIRECTORY_SEPARATOR.VOD_FOLDER);
@@ -68,6 +72,7 @@ if(strpos(FFMPEG_OPTIONS,'-c')===false && strpos(FFMPEG_OPTIONS,'codec')===false
 	}
 }
 exec('title Twitch Live leecher v'.VER.' : '.$channel.' [idle]');
+log_msg('[INFO] Session '.SESSION_ID.' initializing');
 while(1)
 {
 	if($disconnect_check>0)
@@ -97,7 +102,7 @@ while(1)
 	else
 		$oauth_token='OAuth '.OAUTH_TOKEN;
 	
-	if(time()-21600 > $token_timeout_ts)
+	if(time()-3600 > $token_timeout_ts || $force_token_update)
 	{
 		$token_timeout_ts=time();
 		$token_request=token_check($channel,$oauth_token);
@@ -129,7 +134,7 @@ while(1)
 
 	if($first_run)log_msg('[AUTH] Token acquired, begin listening '.$channel);
 	$current_ts=$session_ts=time()+$timezone_offset;
-	echo date('Ymd H:i:s',$current_ts).' [INFO] Listening '.$channel.PHP_EOL;
+	log_msg('[INFO] Listening '.$channel,1);
 	
 	$json=json_decode($token_request,true);
 	if(!isset($json['data']['streamPlaybackAccessToken']['signature']) || empty($json['data']['streamPlaybackAccessToken']['signature']))
@@ -170,19 +175,22 @@ while(1)
 	//downloading VOD via ffmpeg
 	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [Recording] , Press "Q" to stop recording. '.$token_status);
 	$current_ts=time()+$timezone_offset;
-	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' begins');
-	exec(dirname(__FILE__).DIRECTORY_SEPARATOR.'ffmpeg.exe -n -i '.$m3u8_url.' '.FFMPEG_OPTIONS.' '.$ffmpeg_arg.' '.dirname(__FILE__).DIRECTORY_SEPARATOR.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).$filename_append.'.'.VIDEO_CONTAINER);
+	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' begins');	
+	exec('"'.dirname(__FILE__).DIRECTORY_SEPARATOR.'ffmpeg.exe" -n -i '.$m3u8_url.' '.FFMPEG_OPTIONS.' '.$ffmpeg_arg.' "'.dirname(__FILE__).DIRECTORY_SEPARATOR.VOD_FOLDER.DIRECTORY_SEPARATOR.$channel.'-'.date('Ymd_His',$current_ts).$filename_append.'.'.VIDEO_CONTAINER.'"');
 	echo '====================================='.PHP_EOL;
 	$lastest_vod_ts=$current_ts=time()+$timezone_offset;
 	log_msg('[INFO] Record session '.$session_ts.' of '.$channel.$record_mode.' ends with '.date('H:i:s',$current_ts-$session_ts));
 	exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [idle] , lastest VOD recorded at '.date('Ymd H:i:s',$lastest_vod_ts).'. '.$token_status);
+	$force_token_update=true;
 	$disconnect_check=1;
 }
-function log_msg($msg=NULL)
+function log_msg($msg=NULL,$log_level=0)
 {
 	if(empty($msg))return false;
+	if(LOG_LEVEL>0)$msg=SESSION_ID.' '.$msg;
 	$msg=date('Ymd H:i:s',time()+TIMEZONE*3600).' '.$msg.PHP_EOL;
 	echo $msg;
+	if(LOG_LEVEL<$log_level)return true;
 	file_put_contents(dirname(__FILE__).DIRECTORY_SEPARATOR.LOG_FILE,$msg,FILE_APPEND);
 }
 function token_check($channel,$oauth_token)
