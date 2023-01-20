@@ -1,6 +1,6 @@
 <?php
 define('OAUTH_TOKEN','undefined'); //replace 'undefined' with your oauth_token if you are subscriber to avoid AD , this token could only obtain via 'auth-token' in the Cookie located in Application tab of browser developer tools.
-define('IDLE_TIME',180); //interval between check ,unit second.
+define('IDLE_TIME',120); //interval between check ,unit second.
 define('VIDEO_CONTAINER','mp4'); //(mkv)Matroska file could still read after accidentally crash.
 define('FFMPEG_OPTIONS','-movflags faststart -segment_format_options flush_packets=1'); //faststart works on MP4 only.
 define('LOG_FILE','log.txt');
@@ -9,7 +9,7 @@ define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V uns
 define('TIMEZONE',8); //GMT +8
 define('LOG_LEVEL',0);
 define('SESSION_ID',str_pad(dechex(mt_rand(0,65535)),4,'0', STR_PAD_LEFT));
-define('VER','1.14');
+define('VER','1.15');
 
 set_time_limit(0);
 
@@ -105,7 +105,8 @@ while(1)
 	if(time()-3600 > $token_timeout_ts || $force_token_update)
 	{
 		$token_timeout_ts=time();
-		$token_request=token_check($channel,$oauth_token);
+		$token_payload='{"operationName":"PlaybackAccessToken_Template","query":"query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) {  streamPlaybackAccessToken(channelName: $login, params: {platform: \"web\", playerBackend: \"mediaplayer\", playerType: $playerType}) @include(if: $isLive) {    value    signature    __typename  }  videoPlaybackAccessToken(id: $vodID, params: {platform: \"web\", playerBackend: \"mediaplayer\", playerType: $playerType}) @include(if: $isVod) {    value    signature    __typename  }}","variables":{"isLive":true,"login":"'.$channel.'","isVod":false,"vodID":"","playerType":"site"}}';
+		$token_request=gql_request($channel,$oauth_token,$token_payload);
 		if(strpos($token_request,'UNAUTHORIZED_ENTITLMENTS')!==false)
 		{
 			log_msg('[EROR] Unable to access content, you must use token if '.$channel.' is subscriber only channel.');
@@ -119,7 +120,7 @@ while(1)
 				//retrying with guest 
 				$oauth_token='undefined';
 				$token_status=' (*token invalid) ';
-				$token_request=token_check($channel,$oauth_token);
+				$token_request=gql_request($channel,$oauth_token,$token_payload);
 			}
 			else
 				$token_status=' (token valid) ';
@@ -143,10 +144,30 @@ while(1)
 		continue;
 	}
 	$token=urlencode($json['data']['streamPlaybackAccessToken']['value']);
+	$channel_info=gql_request($channel,$oauth_token,'[{"operationName":"UseLive","variables":{"channelLogin":"'.$channel.'"},"extensions":{"persistedQuery":{"version":1,"sha256Hash":"639d5f11bfb8bf3053b424d9ef650d04c4ebb7d94711d644afb08fe9a0fad5d9"}}},{"operationName":"ChannelShell","variables":{"login":"'.$channel.'"},"extensions":{"persistedQuery":{"version":1,"sha256Hash":"580ab410bcd0c1ad194224957ae2241e5d252b2c5173d8e0cce9d32d5bb14efe"}}}]');
+	if(strpos($channel_info,'"__typename":"Stream"')===false)
+	{
+		if(strpos($channel_info,'"operationName":"UseLive"')===false)
+			log_msg('[EROR] Not able to get correct '.$channel.' channel info');
+		else
+			log_msg('[INFO] Channel '.$channel.' offline',1);
+		continue; //no live stream info , offline
+	}
+	log_msg('[INFO] Channel '.$channel.' streaming',1);
 	
 	//getting M3U8 URL
-	$usher=@file_get_contents('https://usher.ttvnw.net/api/channel/hls/'.$channel.'.m3u8?allow_source=true&fast_bread=true&p=11'.mt_rand(10000,99999).'&play_session_id=d4c2c086952b116f0c438b4ed39b40ba&player_backend=mediaplayer&playlist_include_framerate=true&reassignments_supported=true&sig='.$json['data']['streamPlaybackAccessToken']['signature'].'&supported_codecs=vp09&token='.$token.'&cdm=wv&player_version=1.2.0');
-	if($usher===false)continue; //consider channel offline
+	$usher_url='https://usher.ttvnw.net/api/channel/hls/'.$channel.'.m3u8?allow_source=true&fast_bread=true&p=11'.mt_rand(10000,99999).'&player_backend=mediaplayer&playlist_include_framerate=true&reassignments_supported=true&sig='.$json['data']['streamPlaybackAccessToken']['signature'].'&token='.$token.'&cdm=wv&player_version=1.17.0';
+	$usher=@file_get_contents($usher_url);
+	if($usher===false)
+	{
+		sleep(3); //retry
+		$usher=@file_get_contents($usher_url);
+	}
+	if($usher===false)
+	{
+		log_msg('[EROR] Not able to get M3U8 list of '.$channel);
+		continue;
+	}
 	$https_pos_begin=strpos($usher,'https');
 	$https_pos_end=strpos($usher,'.m3u8',$https_pos_begin);
 	$m3u8_url=substr($usher,$https_pos_begin,$https_pos_end-$https_pos_begin);
@@ -193,13 +214,13 @@ function log_msg($msg=NULL,$log_level=0)
 	if(LOG_LEVEL<$log_level)return true;
 	file_put_contents(dirname(__FILE__).DIRECTORY_SEPARATOR.LOG_FILE,$msg,FILE_APPEND);
 }
-function token_check($channel,$oauth_token)
+function gql_request($channel,$oauth_token,$payload)
 {
 	$opts = array('http'=>
 		array(
 			'method' =>'POST',
 			'header' =>['Content-Type: text/plain;charset=UTF-8','Client-ID: kimne78kx3ncx6brgo4mv6wki5h1ko','Authorization: '.$oauth_token],
-			'content'=>'{"operationName":"PlaybackAccessToken_Template","query":"query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) {  streamPlaybackAccessToken(channelName: $login, params: {platform: \"web\", playerBackend: \"mediaplayer\", playerType: $playerType}) @include(if: $isLive) {    value    signature    __typename  }  videoPlaybackAccessToken(id: $vodID, params: {platform: \"web\", playerBackend: \"mediaplayer\", playerType: $playerType}) @include(if: $isVod) {    value    signature    __typename  }}","variables":{"isLive":true,"login":"'.$channel.'","isVod":false,"vodID":"","playerType":"site"}}'
+			'content'=>$payload
 		)
 	);
 	$context  = stream_context_create($opts);
