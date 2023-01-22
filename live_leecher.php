@@ -126,25 +126,25 @@ while(1)
 				$token_status=' (token valid) ';
 		}
 		exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [idle] '.$token_status);
+		if($token_request!==false)log_msg('[AUTH] Token acquired');
 	}
 	if($token_request===false)
 	{
 		log_msg('[EROR] Server request failed, please check channel '.$channel.' and OAUTH_TOKEN is valid');
 		continue;
 	}
-
-	if($first_run)log_msg('[AUTH] Token acquired, begin listening '.$channel);
 	$current_ts=$session_ts=time()+$timezone_offset;
-	log_msg('[INFO] Listening '.$channel,1);
 	
-	$json=json_decode($token_request,true);
-	if(!isset($json['data']['streamPlaybackAccessToken']['signature']) || empty($json['data']['streamPlaybackAccessToken']['signature']))
+	$channel_info=gql_request($channel,$oauth_token,'[{"operationName":"UseLive","variables":{"channelLogin":"'.$channel.'"},"extensions":{"persistedQuery":{"version":1,"sha256Hash":"639d5f11bfb8bf3053b424d9ef650d04c4ebb7d94711d644afb08fe9a0fad5d9"}}},{"operationName":"ChannelShell","variables":{"login":"'.$channel.'"},"extensions":{"persistedQuery":{"version":1,"sha256Hash":"580ab410bcd0c1ad194224957ae2241e5d252b2c5173d8e0cce9d32d5bb14efe"}}}]');
+
+	if(strpos($channel_info,'"__typename":"UserDoesNotExist"')!==false)
 	{
-		log_msg('[EROR] Unable to get correct API response of '.$channel);
+		log_msg('[EROR] '.$channel.' channel is not exist, or been banned.');
 		continue;
 	}
-	$token=urlencode($json['data']['streamPlaybackAccessToken']['value']);
-	$channel_info=gql_request($channel,$oauth_token,'[{"operationName":"UseLive","variables":{"channelLogin":"'.$channel.'"},"extensions":{"persistedQuery":{"version":1,"sha256Hash":"639d5f11bfb8bf3053b424d9ef650d04c4ebb7d94711d644afb08fe9a0fad5d9"}}},{"operationName":"ChannelShell","variables":{"login":"'.$channel.'"},"extensions":{"persistedQuery":{"version":1,"sha256Hash":"580ab410bcd0c1ad194224957ae2241e5d252b2c5173d8e0cce9d32d5bb14efe"}}}]');
+
+	log_msg('[INFO] Listening '.$channel,1);
+	
 	if(strpos($channel_info,'"__typename":"Stream"')===false)
 	{
 		if(strpos($channel_info,'"operationName":"UseLive"')===false)
@@ -153,6 +153,15 @@ while(1)
 			log_msg('[INFO] Channel '.$channel.' offline',1);
 		continue; //no live stream info , offline
 	}
+	
+	$json=json_decode($token_request,true);
+	if(!isset($json['data']['streamPlaybackAccessToken']['signature']) || empty($json['data']['streamPlaybackAccessToken']['signature']))
+	{
+		log_msg('[EROR] Unable to get correct API response of '.$channel);
+		continue;
+	}
+	$token=urlencode($json['data']['streamPlaybackAccessToken']['value']);
+
 	log_msg('[INFO] Channel '.$channel.' streaming',1);
 	
 	//getting M3U8 URL

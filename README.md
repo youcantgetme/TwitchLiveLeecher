@@ -1,10 +1,10 @@
 # Twitch Live Leecher
 
-A simple PHP script to emulate browser watching live stream, download HLS via ffmpeg.
+A simple PHP script to emulate browser watching live streams, download HLS via ffmpeg.
 
 # installation
 
-- Modify `run.bat`, add channel
+- Modify `run.bat`, add channels
 - Execute `run.bat`
 - The result will locate in VOD folder
 
@@ -13,30 +13,33 @@ A simple PHP script to emulate browser watching live stream, download HLS via ff
 - Check interval
 The default listening interval is 180 seconds, change this via IDLE_TIME.
 
-# Config by channel 
+# Config by channels 
+Monitoring multiple channels
+`@start "" "%~dp0php\php.exe" "%~dp0live_leecher.php" twitchpresents`
+`@start "" "%~dp0php\php.exe" "%~dp0live_leecher.php" twitchmusic`
 
 If no arguments on tail, setting from script will be use.
 
 
-`@start php\php.exe live_leecher.php TwitchChannel1`
+`@start "" "%~dp0php\php.exe" "%~dp0live_leecher.php" twitchpresents`
 
 - The default no tail, recording both video and audio.
 
 
 
-`@start php\php.exe live_leecher.php TwitchChannel2 a`
+`@start "" "%~dp0php\php.exe" "%~dp0live_leecher.php" twitchmusic a`
 
 - Audio option , add `a` or `A` on tail to record audio only, useful when preventing from DMCA auto mute purpose.
 
 
 
-`@start php\php.exe live_leecher.php TwitchChannel3 v`
+`@start "" "%~dp0php\php.exe" "%~dp0live_leecher.php" twitchgaming v`
 
 - Video option , add `v` or `V` on tail to record video only.
 
 
 
-`@start php\php.exe live_leecher.php TwitchChannel4 av`
+`@start "" "%~dp0php\php.exe" "%~dp0live_leecher.php" twitchgaming av`
 
 - A/V option , add `AV` or `av` on tail to record both.
 
