@@ -15,8 +15,11 @@ The default listening interval is 180 seconds, change this via IDLE_TIME.
 
 # Config by channels 
 Monitoring multiple channels
+
 `@start "" "%~dp0php\php.exe" "%~dp0live_leecher.php" twitchpresents`
+
 `@start "" "%~dp0php\php.exe" "%~dp0live_leecher.php" twitchmusic`
+
 
 If no arguments on tail, setting from script will be use.
 

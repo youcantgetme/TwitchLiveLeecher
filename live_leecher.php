@@ -9,7 +9,7 @@ define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V uns
 define('TIMEZONE',8); //GMT +8
 define('LOG_LEVEL',0);
 define('SESSION_ID',str_pad(dechex(mt_rand(0,65535)),4,'0', STR_PAD_LEFT));
-define('VER','1.15');
+define('VER','1.16');
 
 set_time_limit(0);
 
