@@ -9,7 +9,7 @@ define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V uns
 define('TIMEZONE',8); //GMT +8
 define('LOG_LEVEL',0);
 define('SESSION_ID',str_pad(dechex(mt_rand(0,65535)),4,'0', STR_PAD_LEFT));
-define('VER','1.16');
+define('VER','1.17');
 
 set_time_limit(0);
 
@@ -166,11 +166,11 @@ while(1)
 	
 	//getting M3U8 URL
 	$usher_url='https://usher.ttvnw.net/api/channel/hls/'.$channel.'.m3u8?allow_source=true&fast_bread=true&p=11'.mt_rand(10000,99999).'&player_backend=mediaplayer&playlist_include_framerate=true&reassignments_supported=true&sig='.$json['data']['streamPlaybackAccessToken']['signature'].'&token='.$token.'&cdm=wv&player_version=1.17.0';
-	$usher=@file_get_contents($usher_url);
+	$usher=@file_get_contents_nSSL($usher_url);
 	if($usher===false)
 	{
 		sleep(3); //retry
-		$usher=@file_get_contents($usher_url);
+		$usher=@file_get_contents_nSSL($usher_url);
 	}
 	if($usher===false)
 	{
@@ -188,7 +188,7 @@ while(1)
 	}
 	$m3u8_url.='.m3u8';
 	
-	if(strpos(file_get_contents($m3u8_url),',Amazon|')!==false) //M3U8 contains AD
+	if(strpos(file_get_contents_nSSL($m3u8_url),',Amazon|')!==false) //M3U8 contains AD
 	{
 		$current_ts=time()+$timezone_offset;
 		exec('title Twitch Live leecher v'.VER.' : '.$channel.$record_mode.' [Playing AD] '.$token_status);
@@ -197,7 +197,7 @@ while(1)
 		{
 			echo '.';
 			sleep(4);
-			if(strpos(file_get_contents($m3u8_url),',Amazon|')===false)break;			
+			if(strpos(file_get_contents_nSSL($m3u8_url),',Amazon|')===false)break;			
 		}
 		echo PHP_EOL;
 	}
@@ -226,13 +226,22 @@ function log_msg($msg=NULL,$log_level=0)
 function gql_request($channel,$oauth_token,$payload)
 {
 	$opts = array('http'=>
-		array(
+		[
 			'method' =>'POST',
 			'header' =>['Content-Type: text/plain;charset=UTF-8','Client-ID: kimne78kx3ncx6brgo4mv6wki5h1ko','Authorization: '.$oauth_token],
 			'content'=>$payload
-		)
+		],
+		'ssl'=>
+		[
+			'verify_peer'=>false,
+			'verify_peer_name'=>false,
+		]
 	);
 	$context  = stream_context_create($opts);
 	return @file_get_contents('https://gql.twitch.tv/gql', false, $context);
+}
+function file_get_contents_nSSL($url)
+{
+	return file_get_contents($url,false,stream_context_create(['ssl'=>['verify_peer'=>false,'verify_peer_name'=>false]]));
 }
 ?>
