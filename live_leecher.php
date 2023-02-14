@@ -5,11 +5,11 @@ define('VIDEO_CONTAINER','mp4'); //(mkv)Matroska file could still read after acc
 define('FFMPEG_OPTIONS','-movflags faststart -segment_format_options flush_packets=1'); //faststart works on MP4 only.
 define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
-define('FORCE_44100_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
+define('FORCE_48000_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
 define('TIMEZONE',8); //GMT +8
 define('LOG_LEVEL',0);
 define('SESSION_ID',str_pad(dechex(mt_rand(0,65535)),4,'0', STR_PAD_LEFT));
-define('VER','1.17');
+define('VER','1.18');
 
 set_time_limit(0);
 
@@ -51,15 +51,15 @@ if(strpos(FFMPEG_OPTIONS,'-c')===false && strpos(FFMPEG_OPTIONS,'codec')===false
 	{
 		//default , record both audio and video
 		$ffmpeg_arg='-c copy';
-		if(FORCE_44100_AUDIO)
-			$ffmpeg_arg='-c:v copy -c:a aac -b:a 160k -ar 44100';
+		if(FORCE_48000_AUDIO)
+			$ffmpeg_arg='-c:v copy -c:a aac -b:a 160k -ar 48000';
 	}
 	elseif($audio)
 	{
 		//audio only
 		$ffmpeg_arg='-vn -c:a copy';
-		if(FORCE_44100_AUDIO)
-			$ffmpeg_arg='-vn -c:a aac -b:a 160k -ar 44100';
+		if(FORCE_48000_AUDIO)
+			$ffmpeg_arg='-vn -c:a aac -b:a 160k -ar 48000';
 		$filename_append='_audio_only';
 		$record_mode=' *Audio only*';	
 	}
@@ -104,6 +104,7 @@ while(1)
 	
 	if(time()-3600 > $token_timeout_ts || $force_token_update)
 	{
+		$force_token_update=false;
 		$token_timeout_ts=time();
 		$token_payload='{"operationName":"PlaybackAccessToken_Template","query":"query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) {  streamPlaybackAccessToken(channelName: $login, params: {platform: \"web\", playerBackend: \"mediaplayer\", playerType: $playerType}) @include(if: $isLive) {    value    signature    __typename  }  videoPlaybackAccessToken(id: $vodID, params: {platform: \"web\", playerBackend: \"mediaplayer\", playerType: $playerType}) @include(if: $isVod) {    value    signature    __typename  }}","variables":{"isLive":true,"login":"'.$channel.'","isVod":false,"vodID":"","playerType":"site"}}';
 		$token_request=gql_request($channel,$oauth_token,$token_payload);
@@ -142,8 +143,6 @@ while(1)
 		log_msg('[EROR] '.$channel.' channel is not exist, or been banned.');
 		continue;
 	}
-
-	log_msg('[INFO] Listening '.$channel,1);
 	
 	if(strpos($channel_info,'"__typename":"Stream"')===false)
 	{
@@ -162,7 +161,7 @@ while(1)
 	}
 	$token=urlencode($json['data']['streamPlaybackAccessToken']['value']);
 
-	log_msg('[INFO] Channel '.$channel.' streaming',1);
+	log_msg('[INFO] Channel '.$channel.' streaming');
 	
 	//getting M3U8 URL
 	$usher_url='https://usher.ttvnw.net/api/channel/hls/'.$channel.'.m3u8?allow_source=true&fast_bread=true&p=11'.mt_rand(10000,99999).'&player_backend=mediaplayer&playlist_include_framerate=true&reassignments_supported=true&sig='.$json['data']['streamPlaybackAccessToken']['signature'].'&token='.$token.'&cdm=wv&player_version=1.17.0';
@@ -196,7 +195,7 @@ while(1)
 		while(true)
 		{
 			echo '.';
-			sleep(4);
+			sleep(3);
 			if(strpos(file_get_contents_nSSL($m3u8_url),',Amazon|')===false)break;			
 		}
 		echo PHP_EOL;
