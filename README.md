@@ -10,9 +10,9 @@ A simple PHP script to emulate browser watching live streams, download HLS via f
 
 # Options
 
-IDLE_TIME - 120 seconds default, Probing interval.
-VIDEO_CONTAINER - MP4/MKV , MKV(Matroska) format could still read after crash, can convert to MP4 via OBS.
-FORCE_48000_AUDIO - 0/1 Force audio convert to 48K to prevent A/V desync cause by some not 48K sample rate AD, additional CPU required.
+- IDLE_TIME - 120 seconds default, Probing interval.
+- VIDEO_CONTAINER - MP4/MKV , MKV(Matroska) format could still read after crash, can convert to MP4 via OBS.
+- FORCE_48000_AUDIO - 0/1 Force audio convert to 48K to prevent A/V desync cause by some not 48K sample rate AD, additional CPU required.
 
 # Config by channels 
 Monitoring multiple channels
@@ -64,9 +64,9 @@ Then modify `undefined` following OAUTH_TOKEN with your token at the second line
 
 # 選項
 
-IDLE_TIME - 監控開台頻率的間隔, 預設120秒
-VIDEO_CONTAINER - MP4/MKV , MKV(Matroska)格式下意外中斷或當機後的檔案仍然可以讀取, 可以用OBS轉成MP4
-FORCE_48000_AUDIO - 0/1 避免廣告音訊不是48K取樣造成影音不同步, 需額外用CPU而預設關閉
+- IDLE_TIME - 監控開台頻率的間隔, 預設120秒
+- VIDEO_CONTAINER - MP4/MKV , MKV(Matroska)格式下意外中斷或當機後的檔案仍然可以讀取, 可以用OBS轉成MP4
+- FORCE_48000_AUDIO - 0/1 避免廣告音訊不是48K取樣造成影音不同步, 需額外用CPU而預設關閉
 
 # 設定頻道
 
@@ -103,6 +103,6 @@ FORCE_48000_AUDIO - 0/1 避免廣告音訊不是48K取樣造成影音不同步, 
 
 # 如何找到金鑰
 
-Twitch Live Leecher 可以用訂閱者金鑰跳過廣告, 以Chrome為例 打開Twitch頁面後按F12叫出開發工具然後依下圖找到金鑰
+Twitch Live Leecher 可以用訂閱者金鑰跳過廣告, 以Chrome為例 打開Twitch頁面後按F12叫出開發工具然後依下圖找到金鑰.
 然後在 live_leecher.php 第二行 找到OAUTH_TOKEN後的 `undefined` 修改成剛剛取得的值>存檔>重開run.bat
 ![image](https://github.com/youcantgetme/TwitchLiveLeecher/blob/master/auth-token.png)
