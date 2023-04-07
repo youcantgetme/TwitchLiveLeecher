@@ -5,11 +5,11 @@ define('VIDEO_CONTAINER','mp4'); //(mkv)Matroska file could still read after acc
 define('FFMPEG_OPTIONS','-movflags faststart -segment_format_options flush_packets=1'); //faststart works on MP4 only.
 define('LOG_FILE','log.txt');
 define('VOD_FOLDER','VOD');
-define('FORCE_48000_AUDIO',0); //set 1 to prevent AD in the middle cause A/V unsynchronized because different sample rate
+define('FORCE_48000_AUDIO',1); //twitch AD break's audio samplerate is 44100Hz, force transcoding to prevent A/V desync
 define('TIMEZONE',8); //GMT +8
 define('LOG_LEVEL',0);
 define('SESSION_ID',str_pad(dechex(mt_rand(0,65535)),4,'0', STR_PAD_LEFT));
-define('VER','1.20');
+define('VER','1.21');
 
 set_time_limit(0);
 
